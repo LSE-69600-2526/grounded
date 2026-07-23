@@ -34,7 +34,7 @@ a corpus was built with a different embedder than the one now active (their
 vectors are not comparable — re-ingest to fix). See
 [ADR 0005](../../adr/0005-frozen-chunk-text-as-substrate.md).
 
-## Claims 🔵 (arrives with Phase 2–3)
+## Claims & answers 🟢
 
 When verification lands, each shown claim persists as a row that ties an answer
 back to evidence:

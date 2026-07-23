@@ -13,3 +13,4 @@ numbered ADR that supersedes the old one.
 | [0005](0005-frozen-chunk-text-as-substrate.md) | Frozen chunk text is the verification substrate |
 | [0006](0006-two-leg-verification.md) | Two-leg verification: deterministic then judge |
 | [0007](0007-flag-dont-drop.md) | Flag, don't drop |
+| [0008](0008-optional-pluggable-generation.md) | Generation is optional and provider-pluggable |

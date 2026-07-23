@@ -15,8 +15,10 @@ from __future__ import annotations
 import argparse
 import sys
 
+from .answer import compose_answer, persist_answer
 from .config import Settings
 from .embedder import get_embedder
+from .generator import get_generator
 from .ingest import ingest_path
 from .retrieve import Retriever
 from .store import Store
@@ -46,8 +48,28 @@ def _cmd_ask(args: argparse.Namespace, settings: Settings) -> int:
         return 1
 
     results = retriever.search(args.question, k=args.k)
-    print(f'Question: {args.question}')
-    print(f"Top {len(results)} passages (embedder '{embedder.name}'):\n")
+    generator = get_generator(settings)
+
+    if generator is None or args.retrieve_only:
+        _print_passages(args.question, results, embedder.name)
+        if generator is None and not args.retrieve_only:
+            print(
+                "note: answer generation is off (no OPENAI_API_KEY / GROUNDED_GENERATOR). "
+                "Showing retrieved passages only.\n"
+            )
+        store.close()
+        return 0
+
+    answer = compose_answer(args.question, results, generator)
+    persist_answer(store, answer)
+    _print_answer(answer, generator.name)
+    store.close()
+    return 0
+
+
+def _print_passages(question: str, results, embedder_name: str) -> None:
+    print(f"Question: {question}")
+    print(f"Top {len(results)} passages (embedder '{embedder_name}'):\n")
     for rank, res in enumerate(results, 1):
         c = res.chunk
         snippet = " ".join(c.text.split())
@@ -55,8 +77,27 @@ def _cmd_ask(args: argparse.Namespace, settings: Settings) -> int:
             snippet = snippet[:277] + "..."
         print(f"[{rank}] score={res.score:.3f}  {c.source_title}  (chunk #{c.ord})")
         print(f"    {snippet}\n")
-    store.close()
-    return 0
+
+
+def _print_answer(answer, generator_name: str) -> None:
+    print(f"Question: {answer.question}")
+    print(f"(generator '{generator_name}')\n")
+    if not answer.claims:
+        print("No claims could be grounded in this corpus for that question.")
+        print("(An honest gap: the sources don't answer it.)\n")
+        return
+    for vc in answer.claims:
+        if vc.verified:
+            src = vc.chunk.source_title if vc.chunk else "?"
+            print(f"  [verified] {vc.claim.text}")
+            print(f"      \u201c{vc.claim.quote}\u201d  \u2014 {src}")
+        else:
+            print(f"  [flagged]  {vc.claim.text}")
+            print(f"      reason: {vc.reason}")
+        print()
+    n_ok = len(answer.verified_claims)
+    n_flag = len(answer.flagged_claims)
+    print(f"{n_ok} verified, {n_flag} flagged. Flagged claims are shown, not hidden.")
 
 
 def _cmd_stats(_args: argparse.Namespace, settings: Settings) -> int:
@@ -87,7 +128,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_ask = sub.add_parser("ask", help="retrieve the most relevant passages")
     p_ask.add_argument("question", help="the question to search for")
-    p_ask.add_argument("-k", type=int, default=5, help="how many passages to return")
+    p_ask.add_argument("-k", type=int, default=5, help="how many passages to retrieve")
+    p_ask.add_argument(
+        "--retrieve-only",
+        action="store_true",
+        help="skip generation; just show the retrieved passages",
+    )
     p_ask.set_defaults(func=_cmd_ask)
 
     p_stats = sub.add_parser("stats", help="show corpus size and embedder")

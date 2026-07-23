@@ -23,7 +23,7 @@ Embed the question, score it against every stored chunk by cosine similarity,
 return the top-k. Owes downstream a **traceable candidate set**: each result
 carries its source identity and its score, never bare text.
 
-## Generate — per question 🔵 (Phase 2)
+## Generate — per question 🟢
 
 Given the question and the retrieved chunks, produce a list of **claims**, each
 co-emitted with (a) the verbatim quote it rests on and (b) the id of the source
@@ -32,7 +32,7 @@ that was actually retrieved for this question. There is no path that writes pros
 first and attaches citations afterward — that route manufactures plausible-looking
 mis-attribution. See [ADR 0006](../../adr/0006-two-leg-verification.md).
 
-## Verify — per question 🔵 (Phase 2–3)
+## Verify — per question 🟢 deterministic leg · 🔵 judge leg (Phase 3)
 
 Two independent checks per claim:
 

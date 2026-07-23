@@ -14,7 +14,7 @@ Every claim in an answer is one of three honest things:
 The cardinal sin is a statement that presents itself as source-supported but is
 not supported by its cited source as worded.
 
-## Grounding tiers 🔵
+## Grounding tiers 🔵 (assigned by the judge, Phase 3)
 
 Ordered by inference distance from the evidence:
 
@@ -33,7 +33,7 @@ Plus two outcomes that are **not** tiers:
 - **Weakly grounded** — a completeness flag on an otherwise valid claim (thin or
   cut-short support). The claim stands but is under-evidenced.
 
-## Verification 🔵
+## Verification 🟢 deterministic · 🔵 judge (Phase 3)
 
 `produce → cite → verify` runs before anything is shown, with cite and verify as
 mandatory steps, not optional passes.

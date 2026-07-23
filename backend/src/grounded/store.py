@@ -35,6 +35,21 @@ CREATE TABLE IF NOT EXISTS chunks (
     embed_model TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_chunks_source ON chunks(source_id);
+CREATE TABLE IF NOT EXISTS answers (
+    id         INTEGER PRIMARY KEY,
+    question   TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS claims (
+    id          INTEGER PRIMARY KEY,
+    answer_id   INTEGER NOT NULL REFERENCES answers(id) ON DELETE CASCADE,
+    claim_text  TEXT NOT NULL,
+    quote       TEXT NOT NULL,
+    chunk_id    INTEGER,
+    status      TEXT NOT NULL,
+    reason      TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_claims_answer ON claims(answer_id);
 """
 
 
@@ -65,7 +80,10 @@ class Store:
 
     def reset(self) -> None:
         """Drop all data. Used by ``grounded reset`` and the tests."""
-        self._conn.executescript("DELETE FROM chunks; DELETE FROM sources;")
+        self._conn.executescript(
+            "DELETE FROM claims; DELETE FROM answers; "
+            "DELETE FROM chunks; DELETE FROM sources;"
+        )
         self._conn.commit()
 
     def replace_source(
@@ -138,6 +156,31 @@ class Store:
             models.add(row["embed_model"])
         matrix = np.vstack(vectors) if vectors else np.zeros((0, 0), dtype=np.float32)
         return chunks, matrix, models
+
+    def save_answer(self, question: str, claim_rows: list[tuple]) -> int:
+        """Persist an answer and its verified claims.
+
+        Args:
+            question: The question that was asked.
+            claim_rows: One tuple per claim, as
+                ``(claim_text, quote, chunk_id_or_none, status, reason)``.
+
+        Returns:
+            The new answer id.
+        """
+        cur = self._conn.cursor()
+        cur.execute(
+            "INSERT INTO answers (question, created_at) VALUES (?, ?)",
+            (question, datetime.now(timezone.utc).isoformat()),
+        )
+        answer_id = int(cur.lastrowid)
+        cur.executemany(
+            "INSERT INTO claims (answer_id, claim_text, quote, chunk_id, status, reason) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            [(answer_id, *row) for row in claim_rows],
+        )
+        self._conn.commit()
+        return answer_id
 
     def counts(self) -> tuple[int, int]:
         """Return (source_count, chunk_count)."""

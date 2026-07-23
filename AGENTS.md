@@ -23,7 +23,9 @@ Conventions for anyone (human or AI assistant) working in this repo.
 
 ## Current phase
 
-Phase 1 (ingest + retrieve) is built and tested. Next is Phase 2: a `generate`
-step that emits claims with co-emitted citations, and the deterministic
-quote-presence check against the frozen chunk text. See
+Phases 1 (ingest + retrieve) and 2 (generate + deterministic quote check) are
+built and tested. The tool now produces answers whose every claim is either
+verified against a source quote or flagged. Next is Phase 3: the LLM-judge
+support leg that assigns a grounding tier (does the source *support* the claim,
+not merely contain the quote), and honest rendering of tiers. See
 [`docs/roadmap.md`](docs/roadmap.md).

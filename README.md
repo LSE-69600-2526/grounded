@@ -45,7 +45,7 @@ source.
 | Phase | Scope | State |
 |---|---|---|
 | 1 | Ingest + retrieve | **built** — this repo |
-| 2 | Generate claims with co-emitted citations + deterministic quote check | next |
+| 2 | Generate claims with co-emitted citations + deterministic quote check | **built** |
 | 3 | LLM-judge grounding tiers + flag-don't-drop rendering | planned |
 | 4 (stretch) | Evaluation set, hybrid retrieval, web UI | planned |
 
@@ -87,16 +87,21 @@ pip install -e .            # add ".[openai]" for semantic embeddings, ".[dev]" 
 ```sh
 grounded ingest sample_corpus              # build the corpus
 grounded stats                             # what's in it
-grounded ask "do naps help memory?" -k 3   # retrieve the most relevant passages
+grounded ask "do naps help memory?" -k 3   # answer, or retrieve-only without a key
 ```
 
-Switch from offline lexical matching to real semantic embeddings by setting two
-environment variables:
+With no API key, `ask` shows the retrieved passages (Phase 1 behaviour). Add a
+key and generation lights up: `ask` returns an answer where each claim is either
+**verified** against a source quote or **flagged**, and fabricated quotes are
+caught by a deterministic check. For meaning-based retrieval and generated
+answers, switch on OpenAI:
 
 ```sh
-export GROUNDED_EMBEDDER=openai
 export OPENAI_API_KEY=sk-...
+export GROUNDED_EMBEDDER=openai          # semantic retrieval (optional but recommended)
 grounded reset && grounded ingest sample_corpus   # re-embed under the new backend
+grounded ask "do naps help memory?" -k 3          # now a verified, cited answer
+grounded ask "..." --retrieve-only                # force Phase 1 passage view
 ```
 
 ## Test
@@ -107,4 +112,4 @@ cd backend && pip install -e ".[dev]" && pytest
 
 ## Licence
 
-MIT — see [LICENSE](LICENSE). Maria Monserrat Perez Villanueva
+MIT — see [LICENSE](LICENSE).
