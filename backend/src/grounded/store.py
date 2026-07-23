@@ -47,7 +47,8 @@ CREATE TABLE IF NOT EXISTS claims (
     quote       TEXT NOT NULL,
     chunk_id    INTEGER,
     status      TEXT NOT NULL,
-    reason      TEXT NOT NULL
+    reason      TEXT NOT NULL,
+    tier        TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_claims_answer ON claims(answer_id);
 """
@@ -74,6 +75,19 @@ class Store:
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA foreign_keys = ON")
         self._conn.executescript(_SCHEMA)
+        self._migrate()
+
+    def _migrate(self) -> None:
+        """Additive migrations for databases created by an earlier version.
+
+        SQLite's CREATE TABLE IF NOT EXISTS won't add a column to a table that
+        already exists, so a corpus built before the judge landed needs the
+        ``tier`` column added. Safe to run every startup.
+        """
+        cols = {r[1] for r in self._conn.execute("PRAGMA table_info(claims)")}
+        if "tier" not in cols:
+            self._conn.execute("ALTER TABLE claims ADD COLUMN tier TEXT")
+            self._conn.commit()
 
     def close(self) -> None:
         self._conn.close()
@@ -163,7 +177,7 @@ class Store:
         Args:
             question: The question that was asked.
             claim_rows: One tuple per claim, as
-                ``(claim_text, quote, chunk_id_or_none, status, reason)``.
+                ``(claim_text, quote, chunk_id_or_none, status, reason, tier_or_none)``.
 
         Returns:
             The new answer id.
@@ -175,8 +189,8 @@ class Store:
         )
         answer_id = int(cur.lastrowid)
         cur.executemany(
-            "INSERT INTO claims (answer_id, claim_text, quote, chunk_id, status, reason) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO claims (answer_id, claim_text, quote, chunk_id, status, reason, tier) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
             [(answer_id, *row) for row in claim_rows],
         )
         self._conn.commit()

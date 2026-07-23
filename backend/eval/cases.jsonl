@@ -1,0 +1,12 @@
+{"question": "Do naps help memory?", "category": "answerable", "note": "sleep doc directly supports this"}
+{"question": "Why is the sky blue during the day?", "category": "unanswerable", "note": "no source covers optics"}
+{"question": "Does caffeine improve sleep quality?", "category": "trap", "note": "caffeine doc says it DELAYS sleep; a misread would assert the opposite"}
+{"question": "How does caffeine affect alertness?", "category": "answerable", "note": "caffeine doc supports this"}
+{"question": "What is the population of France?", "category": "unanswerable", "note": "no source covers demographics"}
+{"question": "Does exercise improve cognition?", "category": "answerable", "note": "exercise doc supports this"}
+{"question": "Do breakfast clubs raise exam results?", "category": "unanswerable", "note": "no source mentions breakfast clubs"}
+{"question": "Does a single workout permanently raise IQ?", "category": "trap", "note": "exercise doc mentions only short-term, varied effects; a misread would overclaim"}
+{"question": "Does sleep deprivation improve learning?", "category": "trap", "note": "sleep doc says deprivation IMPAIRS encoding; opposite of a misread"}
+{"question": "How long a nap gives the biggest memory gain?", "category": "answerable", "note": "sleep doc: ~ninety minutes"}
+{"question": "Is caffeine the most consumed psychoactive substance?", "category": "answerable", "note": "caffeine doc states this"}
+{"question": "Does drinking coffee cause weight loss?", "category": "unanswerable", "note": "no source links caffeine to weight"}

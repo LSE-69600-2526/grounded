@@ -45,7 +45,8 @@ back to evidence:
 | `quote` | the verbatim supporting span |
 | `chunk_id` | the cited chunk |
 | `tier` | direct-quote / inferred / cross-source / unsupported |
-| `flag` | none / weakly-grounded / below-policy |
+| `tier` | direct_quote / inferred (judge verdict), or null |
+| `flag` | none / weakly-grounded (planned) |
 
 This stays a flat table, not a graph. The richer annotation layer of the larger
 system it descends from is intentionally out of scope — see

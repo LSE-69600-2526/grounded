@@ -32,7 +32,7 @@ that was actually retrieved for this question. There is no path that writes pros
 first and attaches citations afterward — that route manufactures plausible-looking
 mis-attribution. See [ADR 0006](../../adr/0006-two-leg-verification.md).
 
-## Verify — per question 🟢 deterministic leg · 🔵 judge leg (Phase 3)
+## Verify — per question 🟢 (both legs)
 
 Two independent checks per claim:
 
@@ -46,7 +46,7 @@ On failure, the claim is **reworded down** to what the evidence supports, or
 kept with a visible flag. It is never silently deleted and never silently
 promoted to a clean tier. See [grounding.md](grounding.md).
 
-## Render — per question 🔵 (Phase 3)
+## Render — per question 🟢
 
 Present the answer with each claim carrying its citation and tier badge, weak or
 unsupported claims flagged in place, and any gaps ("nothing in this corpus

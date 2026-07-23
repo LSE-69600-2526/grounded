@@ -20,6 +20,7 @@ from .config import Settings
 from .embedder import get_embedder
 from .generator import get_generator
 from .ingest import ingest_path
+from .judge import get_judge
 from .retrieve import Retriever
 from .store import Store
 
@@ -60,9 +61,10 @@ def _cmd_ask(args: argparse.Namespace, settings: Settings) -> int:
         store.close()
         return 0
 
-    answer = compose_answer(args.question, results, generator)
+    judge = None if args.no_judge else get_judge(settings)
+    answer = compose_answer(args.question, results, generator, judge)
     persist_answer(store, answer)
-    _print_answer(answer, generator.name)
+    _print_answer(answer, generator.name, judge.name if judge else None)
     store.close()
     return 0
 
@@ -79,17 +81,20 @@ def _print_passages(question: str, results, embedder_name: str) -> None:
         print(f"    {snippet}\n")
 
 
-def _print_answer(answer, generator_name: str) -> None:
+def _print_answer(answer, generator_name: str, judge_name: str | None) -> None:
+    tail = f", judge '{judge_name}'" if judge_name else ", no judge (quote check only)"
     print(f"Question: {answer.question}")
-    print(f"(generator '{generator_name}')\n")
+    print(f"(generator '{generator_name}'{tail})\n")
     if not answer.claims:
         print("No claims could be grounded in this corpus for that question.")
         print("(An honest gap: the sources don't answer it.)\n")
         return
+    labels = {"direct_quote": "direct quote", "inferred": "inferred"}
     for vc in answer.claims:
         if vc.verified:
             src = vc.chunk.source_title if vc.chunk else "?"
-            print(f"  [verified] {vc.claim.text}")
+            tier = labels.get(vc.tier or "", "grounded")
+            print(f"  [verified \u00b7 {tier}] {vc.claim.text}")
             print(f"      \u201c{vc.claim.quote}\u201d  \u2014 {src}")
         else:
             print(f"  [flagged]  {vc.claim.text}")
@@ -118,6 +123,38 @@ def _cmd_reset(_args: argparse.Namespace, settings: Settings) -> int:
     return 0
 
 
+def _cmd_eval(args: argparse.Namespace, settings: Settings) -> int:
+    from .answer import compose_answer
+    from .eval_harness import format_scorecard, load_cases, run_eval
+
+    generator = get_generator(settings)
+    if generator is None:
+        print(
+            "Evaluation needs a model backend. Set OPENAI_API_KEY, or "
+            "GROUNDED_GENERATOR=ollama with Ollama running."
+        )
+        return 1
+
+    store = Store(settings.db_path)
+    embedder = get_embedder(settings)
+    retriever = Retriever(store, embedder)
+    if retriever.is_empty:
+        print("The corpus is empty. Run 'grounded ingest <path>' first.")
+        store.close()
+        return 1
+    judge = None if args.no_judge else get_judge(settings)
+    cases = load_cases(args.cases)
+
+    def answer_fn(question: str):
+        results = retriever.search(question, k=args.k)
+        return compose_answer(question, results, generator, judge)
+
+    results = run_eval(cases, answer_fn)
+    store.close()
+    print(format_scorecard(results))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="grounded", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -134,6 +171,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="skip generation; just show the retrieved passages",
     )
+    p_ask.add_argument(
+        "--no-judge",
+        action="store_true",
+        help="skip the LLM judge; run the deterministic quote check only",
+    )
     p_ask.set_defaults(func=_cmd_ask)
 
     p_stats = sub.add_parser("stats", help="show corpus size and embedder")
@@ -141,6 +183,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_reset = sub.add_parser("reset", help="empty the corpus")
     p_reset.set_defaults(func=_cmd_reset)
+
+    p_eval = sub.add_parser("eval", help="score the pipeline against a case set")
+    p_eval.add_argument(
+        "--cases", default="eval/cases.jsonl", help="path to a JSONL case file"
+    )
+    p_eval.add_argument("-k", type=int, default=5, help="passages to retrieve per question")
+    p_eval.add_argument("--no-judge", action="store_true", help="quote check only")
+    p_eval.set_defaults(func=_cmd_eval)
     return parser
 
 

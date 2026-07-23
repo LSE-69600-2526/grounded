@@ -20,6 +20,9 @@ class Settings:
         hashing_dim: Vector size for the offline hashing embedder.
         openai_model: Embedding model used when embedder="openai".
         generator: Answer generation backend ("auto", "openai", "ollama", "none").
+        judge: Grounding-judge backend ("auto", "openai", "ollama", "none").
+            "auto" follows the generator backend. "none" runs the deterministic
+            quote check only.
             "auto" enables OpenAI when OPENAI_API_KEY is set, else falls back to
             retrieval-only (no answer synthesis).
         openai_chat_model: Chat model used when generation is "openai".
@@ -35,6 +38,7 @@ class Settings:
     hashing_dim: int = 512
     openai_model: str = "text-embedding-3-small"
     generator: str = "auto"
+    judge: str = "auto"
     openai_chat_model: str = "gpt-4o-mini"
     ollama_base_url: str = "http://localhost:11434/v1"
     ollama_model: str = "llama3.1"
@@ -51,6 +55,7 @@ class Settings:
             hashing_dim=int(os.environ.get("GROUNDED_HASHING_DIM", cls.hashing_dim)),
             openai_model=os.environ.get("GROUNDED_OPENAI_MODEL", cls.openai_model),
             generator=os.environ.get("GROUNDED_GENERATOR", cls.generator).lower(),
+            judge=os.environ.get("GROUNDED_JUDGE", cls.judge).lower(),
             openai_chat_model=os.environ.get("GROUNDED_CHAT_MODEL", cls.openai_chat_model),
             ollama_base_url=os.environ.get("GROUNDED_OLLAMA_URL", cls.ollama_base_url),
             ollama_model=os.environ.get("GROUNDED_OLLAMA_MODEL", cls.ollama_model),

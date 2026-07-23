@@ -25,7 +25,7 @@ Done: `config`, `embedder` (hashing + OpenAI), `chunker`, `loaders`, `store`,
 tests. At the end of Phase 2 the tool is *honest*: it cannot show a quote that
 isn't in a source.
 
-## Phase 3 — judge + honest rendering 🔵 next
+## Phase 3 — judge + honest rendering + eval 🟢 built
 
 - LLM-as-judge support check assigning a grounding tier per claim.
 - Flag-don't-drop rendering: tier badges, weak/unverified flags, explicit gaps.
@@ -34,7 +34,7 @@ isn't in a source.
 At the end of Phase 3 the tool is *distinctive*: every claim carries its
 grounding, and failures are visible.
 
-## Phase 4 — stretch 🔵
+## Phase 4 — stretch 🔵 next
 
 - An **evaluation set**: a handful of questions with known answers, scored for
   "% of claims verified" and "% correctly caught as unsupported." The single

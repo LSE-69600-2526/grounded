@@ -46,7 +46,7 @@ source.
 |---|---|---|
 | 1 | Ingest + retrieve | **built** — this repo |
 | 2 | Generate claims with co-emitted citations + deterministic quote check | **built** |
-| 3 | LLM-judge grounding tiers + flag-don't-drop rendering | planned |
+| 3 | LLM-judge grounding tiers + flag-don't-drop rendering + eval set | **built** |
 | 4 (stretch) | Evaluation set, hybrid retrieval, web UI | planned |
 
 See [`docs/roadmap.md`](docs/roadmap.md).
@@ -102,7 +102,12 @@ export GROUNDED_EMBEDDER=openai          # semantic retrieval (optional but reco
 grounded reset && grounded ingest sample_corpus   # re-embed under the new backend
 grounded ask "do naps help memory?" -k 3          # now a verified, cited answer
 grounded ask "..." --retrieve-only                # force Phase 1 passage view
+grounded eval                                     # score the pipeline against eval/cases.jsonl
 ```
+
+### Measuring that it doesn't lie
+
+`grounded eval` runs a set of hand-written cases through the whole pipeline and scores them by category: **answerable** (should produce a grounded claim), **unanswerable** (should report a gap), and **trap** (related text that a sloppy system would misuse — should be flagged, not asserted). It turns the trust claim into a reproducible number and a regression check after any prompt or model change. Needs a model backend (OpenAI or Ollama). See [`docs/adr/0011-category-based-evaluation-set.md`](docs/adr/0011-category-based-evaluation-set.md).
 
 ### Run it fully local and free (Ollama)
 

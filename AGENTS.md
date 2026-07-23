@@ -23,9 +23,8 @@ Conventions for anyone (human or AI assistant) working in this repo.
 
 ## Current phase
 
-Phases 1 (ingest + retrieve) and 2 (generate + deterministic quote check) are
-built and tested. The tool now produces answers whose every claim is either
-verified against a source quote or flagged. Next is Phase 3: the LLM-judge
-support leg that assigns a grounding tier (does the source *support* the claim,
-not merely contain the quote), and honest rendering of tiers. See
-[`docs/roadmap.md`](docs/roadmap.md).
+Phases 1–3 are built and tested: ingest + retrieve, generate with co-emitted
+citations + the deterministic quote check, and the LLM judge that assigns
+grounding tiers (the semantic leg). A category-based eval set (`grounded eval`)
+measures the trust property. Next is Phase 4 (stretch): PDF ingestion, hybrid
+retrieval, and a web UI. See [`docs/roadmap.md`](docs/roadmap.md).

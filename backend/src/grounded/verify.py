@@ -41,15 +41,18 @@ class VerifiedClaim:
 
     Attributes:
         claim: The original model claim.
-        status: "verified" (quote present in the cited source) or "unsupported".
+        status: "verified" (passed the checks) or "unsupported" (failed one).
         reason: Human-readable explanation when unsupported; empty when verified.
         chunk: The cited chunk, if it was a real retrieved source; else None.
+        tier: The judge's grounding tier for a verified claim
+            ("direct_quote" / "inferred"), or None when the judge hasn't run.
     """
 
     claim: Claim
     status: str
     reason: str
     chunk: Chunk | None
+    tier: str | None = None
 
     @property
     def verified(self) -> bool:

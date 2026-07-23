@@ -166,6 +166,20 @@ class OllamaGenerator(_ChatGenerator):
         super().__init__(client, model=model, name=f"ollama:{model}")
 
 
+def resolve_backend(mode: str) -> str:
+    """Resolve a backend mode to a concrete backend name.
+
+    "auto" enables OpenAI when an API key is present, else "none" (Ollama is
+    always explicit). Shared by the generator and the judge so a single setting
+    governs which provider does the LLM work.
+    """
+    import os
+
+    if mode == "auto":
+        return "openai" if os.environ.get("OPENAI_API_KEY") else "none"
+    return mode
+
+
 def get_generator(settings) -> Generator | None:
     """Build the configured generator, or None for retrieval-only mode.
 
@@ -173,13 +187,7 @@ def get_generator(settings) -> Generator | None:
     returns None, so the tool runs with zero setup and lights up when a key is
     added. See docs/adr/0008-optional-pluggable-generation.md.
     """
-    import os
-
-    mode = settings.generator
-    if mode == "none":
-        return None
-    if mode == "auto":
-        mode = "openai" if os.environ.get("OPENAI_API_KEY") else "none"
+    mode = resolve_backend(settings.generator)
     if mode == "none":
         return None
     if mode == "openai":
