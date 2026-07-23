@@ -20,6 +20,9 @@ Two backends ship:
 - **OpenAI.** Real semantic embeddings via the embeddings API. The upgrade you
   switch to (`GROUNDED_EMBEDDER=openai`) when you want retrieval that
   understands meaning rather than shared words.
+- **Ollama.** The same semantic quality, but from a model running locally
+  (`GROUNDED_EMBEDDER=ollama`) — free and offline. See
+  [ADR 0009](../../adr/0009-local-inference-via-ollama.md).
 
 A corpus is only comparable to a query embedded by the **same** backend, so the
 store records `embed_model` per chunk and retrieval warns on a mismatch. Changing

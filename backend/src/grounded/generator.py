@@ -114,20 +114,17 @@ class MockGenerator:
         return list(self._claims)
 
 
-class OpenAIGenerator:
-    """Generation via an OpenAI chat model with JSON output."""
+class _ChatGenerator:
+    """Shared generation logic over any OpenAI-compatible chat client.
 
-    def __init__(self, model: str = "gpt-4o-mini") -> None:
-        try:
-            from openai import OpenAI
-        except ImportError as exc:  # pragma: no cover
-            raise RuntimeError(
-                "The 'openai' package is required for OpenAIGenerator. "
-                "Install it with: pip install openai"
-            ) from exc
-        self._client = OpenAI()
+    OpenAI and Ollama differ only in how the client is built; the prompt,
+    the JSON request, and the parsing are identical.
+    """
+
+    def __init__(self, client, model: str, name: str) -> None:
+        self._client = client
         self.model = model
-        self.name = model
+        self.name = name
 
     def generate(self, question: str, results: list[Result]) -> list[Claim]:
         if not results:
@@ -142,6 +139,31 @@ class OpenAIGenerator:
         content = resp.choices[0].message.content or ""
         valid_ids = {r.chunk.id for r in results}
         return parse_response(content, valid_ids)
+
+
+class OpenAIGenerator(_ChatGenerator):
+    """Generation via the OpenAI API (needs OPENAI_API_KEY)."""
+
+    def __init__(self, model: str = "gpt-4o-mini") -> None:
+        from .llm_client import make_client
+
+        super().__init__(make_client(), model=model, name=model)
+
+
+class OllamaGenerator(_ChatGenerator):
+    """Generation via a local Ollama server -- free, offline, no API key.
+
+    Point Ollama's OpenAI-compatible endpoint at localhost. The model must be
+    pulled first (e.g. ``ollama pull llama3.1``).
+    """
+
+    def __init__(
+        self, model: str = "llama3.1", base_url: str = "http://localhost:11434/v1"
+    ) -> None:
+        from .llm_client import make_client
+
+        client = make_client(base_url=base_url, api_key="ollama")
+        super().__init__(client, model=model, name=f"ollama:{model}")
 
 
 def get_generator(settings) -> Generator | None:
@@ -162,4 +184,6 @@ def get_generator(settings) -> Generator | None:
         return None
     if mode == "openai":
         return OpenAIGenerator(settings.openai_chat_model)
+    if mode == "ollama":
+        return OllamaGenerator(settings.ollama_model, settings.ollama_base_url)
     raise ValueError(f"Unknown generator: {settings.generator!r}")

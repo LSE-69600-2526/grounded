@@ -104,6 +104,28 @@ grounded ask "do naps help memory?" -k 3          # now a verified, cited answer
 grounded ask "..." --retrieve-only                # force Phase 1 passage view
 ```
 
+### Run it fully local and free (Ollama)
+
+No API key, no cost, nothing leaves your machine. Install
+[Ollama](https://ollama.com), pull a model, and point Grounded at it:
+
+```sh
+ollama pull llama3.1                     # chat model for generation
+ollama pull nomic-embed-text             # embedding model (optional, for retrieval)
+
+export GROUNDED_GENERATOR=ollama
+export GROUNDED_EMBEDDER=ollama          # or keep the offline hashing default
+grounded reset && grounded ingest sample_corpus
+grounded ask "do naps help memory?" -k 3
+```
+
+Ollama exposes an OpenAI-compatible endpoint on `localhost:11434`, so the same
+code path serves both cloud and local — the only difference is the address.
+Local models are smaller and rougher than the paid frontier, but the
+extract-and-quote task suits them and the deterministic quote check catches
+failures either way. See
+[`docs/adr/0009-local-inference-via-ollama.md`](docs/adr/0009-local-inference-via-ollama.md).
+
 ## Test
 
 ```sh

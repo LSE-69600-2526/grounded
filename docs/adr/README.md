@@ -14,3 +14,4 @@ numbered ADR that supersedes the old one.
 | [0006](0006-two-leg-verification.md) | Two-leg verification: deterministic then judge |
 | [0007](0007-flag-dont-drop.md) | Flag, don't drop |
 | [0008](0008-optional-pluggable-generation.md) | Generation is optional and provider-pluggable |
+| [0009](0009-local-inference-via-ollama.md) | Local inference via Ollama (free, offline mode) |

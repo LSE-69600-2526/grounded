@@ -94,18 +94,20 @@ class OpenAIEmbedder:
 
     _DIMS = {"text-embedding-3-small": 1536, "text-embedding-3-large": 3072}
 
-    def __init__(self, model: str = "text-embedding-3-small") -> None:
-        try:
-            from openai import OpenAI
-        except ImportError as exc:  # pragma: no cover - exercised only without openai
-            raise RuntimeError(
-                "The 'openai' package is required for OpenAIEmbedder. "
-                "Install it with: pip install openai"
-            ) from exc
-        self._client = OpenAI()
+    def __init__(
+        self,
+        model: str = "text-embedding-3-small",
+        *,
+        base_url: str | None = None,
+        api_key: str | None = None,
+        dim: int | None = None,
+    ) -> None:
+        from .llm_client import make_client
+
+        self._client = make_client(base_url=base_url, api_key=api_key)
         self.model = model
         self.name = model
-        self.dim = self._DIMS.get(model, 1536)
+        self.dim = dim or self._DIMS.get(model, 1536)
 
     def _embed_batch(self, texts: list[str]) -> np.ndarray:
         resp = self._client.embeddings.create(model=self.model, input=texts)
@@ -124,10 +126,60 @@ class OpenAIEmbedder:
         return self._embed_batch([text])[0]
 
 
+class OllamaEmbedder:
+    """Semantic embeddings from a local Ollama server -- free, offline.
+
+    Uses Ollama's OpenAI-compatible embeddings endpoint. The model must be
+    pulled first (e.g. ``ollama pull nomic-embed-text``). Dimension is inferred
+    from the first response, so any embedding model works.
+    """
+
+    def __init__(
+        self,
+        model: str = "nomic-embed-text",
+        base_url: str = "http://localhost:11434/v1",
+    ) -> None:
+        from .llm_client import make_client
+
+        self._client = make_client(base_url=base_url, api_key="ollama")
+        self.model = model
+        self.name = f"ollama:{model}"
+        self._dim: int | None = None
+
+    @property
+    def dim(self) -> int:
+        if self._dim is None:
+            # Probe once to learn the vector size.
+            self._dim = self.embed_query("dimension probe").shape[0]
+        return self._dim
+
+    def _embed_batch(self, texts: list[str]) -> np.ndarray:
+        resp = self._client.embeddings.create(model=self.model, input=texts)
+        rows = [np.asarray(item.embedding, dtype=np.float32) for item in resp.data]
+        out = np.vstack([_l2_normalise(r) for r in rows])
+        self._dim = out.shape[1]
+        return out
+
+    def embed_texts(self, texts: list[str]) -> np.ndarray:
+        if not texts:
+            return np.zeros((0, self.dim), dtype=np.float32)
+        out: list[np.ndarray] = []
+        for start in range(0, len(texts), 64):
+            out.append(self._embed_batch(texts[start : start + 64]))
+        return np.vstack(out)
+
+    def embed_query(self, text: str) -> np.ndarray:
+        return self._embed_batch([text])[0]
+
+
 def get_embedder(settings) -> Embedder:
     """Build the embedder named in settings."""
     if settings.embedder == "openai":
         return OpenAIEmbedder(settings.openai_model)
+    if settings.embedder == "ollama":
+        return OllamaEmbedder(settings.ollama_embed_model, settings.ollama_base_url)
     if settings.embedder == "hashing":
         return HashingEmbedder(settings.hashing_dim)
-    raise ValueError(f"Unknown embedder: {settings.embedder!r} (use 'hashing' or 'openai')")
+    raise ValueError(
+        f"Unknown embedder: {settings.embedder!r} (use 'hashing', 'openai', or 'ollama')"
+    )
